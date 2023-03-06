@@ -12,7 +12,7 @@ library(sf)
 
 #point to the directory where your location information is stored
 #make sure this path ends with a '/'
-data_dir = 'path/to/your/lat-lon/location/file/'
+data_dir = '/Users/steeleb/Documents/GitHub/sky-loch-explore/data/'
 ```
 
 ## *Purpose*
@@ -70,21 +70,19 @@ ee.Initialize()
 
 ```{r}
 #point to file - must contin the parameters Latitude, Longitude, comid, and name
-locs = read.csv(file.path(data_dir, 'name_of_your_lat_long_file.csv'))
+locs = read.csv(file.path(data_dir, 'location_lat_longs_sky_loch.csv'))
 
 #rename to required cols Latitude, Longitude, id, name
 locs = locs %>% 
   rowid_to_column() %>% 
   rename(name = location,
-         id = rowid,
-         Latitude = lat,
-         Longitude = long)
+         id = rowid)
 
 #give this a short project name (for file naming conventions)
-proj = 'file_prefix'
+proj = 'sky_loch'
 
 #and specify a folder name for the landsat stacks to get dumped into in your Google Drive. The script will create the folder if it does not exist. Note, if you have a Drive folder name that matches your 'proj_folder' name, all of your output will save there regardless of capitalization.
-proj_folder = 'drive_folder_to_save_to'
+proj_folder = 'sky_loch'
 ```
 
 ### Specify time period of interest
@@ -166,7 +164,7 @@ This chunk creates a Python Fiona object and creates an `ee.FeatureCollection` f
 ```{python}
 if (r.lake_extent == True) :
   # Load the shapefile into a Fiona object
-  with fiona.open(os.path.join(dataDir+'NHDPlus_NWlakes.shp')) as src:
+  with fiona.open(os.path.join(dataDir+'NHDPlus_lakes.shp')) as src:
       shapes = [ee.Geometry.Polygon(
           [[x[0], x[1]] for x in feature['geometry']['coordinates'][0]])
           for feature in src]

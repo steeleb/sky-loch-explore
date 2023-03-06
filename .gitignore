@@ -1,0 +1,8 @@
+#py environs
+*/env/
+
+# r environs
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
