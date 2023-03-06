@@ -45,12 +45,14 @@ list = list.files(file.path(data_dir, 'fromDrive'))
 #add prefix
 list = file.path(data_dir, 'fromDrive', list)
 
-meta_list = list[grepl('meta', list)]
+meta_list = list[grepl('meta', list) & !grepl('LEVEL1', list)]
 data_list = list[!grepl('meta', list)]
+L1_list = list[grepl('LEVEL1', list)]
 
 #read them in and map to a dataframe
 collated_data = map_dfr(data_list, read_csv)
 collated_metadata = map_dfr(meta_list, read_csv)
+L1_list = map_dfr(L1_list, read_csv)
 
 #clean up workspace
 rm(files)
@@ -87,6 +89,21 @@ Grab only the metadata we want
 
 ```{r}
 filtered_metadata <- collated_metadata %>% 
+  # mutate(IMAGE_QUALITY = if_else(is.na(IMAGE_QUALITY), IMAGE_QUALITY_OLI, IMAGE_QUALITY)) %>% 
+  rename(IMAGE_QUALITY = IMAGE_QUALITY_OLI) %>% 
+  select(`system:index`, 
+         LANDSAT_PRODUCT_ID,
+         WRS_PATH, 
+         WRS_ROW, 
+         'mission' = SPACECRAFT_ID, 
+         'date' = DATE_ACQUIRED, 
+         'UTC_time' = SCENE_CENTER_TIME, 
+         CLOUD_COVER,
+         IMAGE_QUALITY, 
+         IMAGE_QUALITY_TIRS, 
+         SUN_AZIMUTH, 
+         SUN_ELEVATION) 
+filtered_L1 <- L1_list %>% 
   # mutate(IMAGE_QUALITY = if_else(is.na(IMAGE_QUALITY), IMAGE_QUALITY_OLI, IMAGE_QUALITY)) %>% 
   rename(IMAGE_QUALITY = IMAGE_QUALITY_OLI) %>% 
   select(`system:index`, 
@@ -158,6 +175,17 @@ write.csv(filtered, file.path(data_dir, paste0('SkyLoch_LandsatC2_SRST_filtered_
 ## Get unique system IDs for Provisional Aquatic SR product
 
 ```{r}
-uindex = unique(filtered$LANDSAT_PRODUCT_ID)
+filtered_forL1 = filtered %>% 
+  select(-LANDSAT_PRODUCT_ID)
+L1_names = filtered_L1 %>% 
+select(date, LANDSAT_PRODUCT_ID, WRS_PATH, WRS_ROW) %>% 
+  left_join(filtered_forL1, .)
+uindex = unique(L1_names$LANDSAT_PRODUCT_ID)
 ```
 
+Save as a txt file
+
+```{r}
+uindex = tibble(uindex)
+write_delim(uindex, col_names = F, file.path(data_dir, 'SkyLoch_L1_SceneList_forProvisional.txt'))
+```
