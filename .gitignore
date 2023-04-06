@@ -1,4 +1,5 @@
 #py environs
+env/
 */env/
 
 # r environs
@@ -6,3 +7,6 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# weirdo files
+.DS_Store
