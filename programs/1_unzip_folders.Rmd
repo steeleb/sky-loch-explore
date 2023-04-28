@@ -1,0 +1,40 @@
+---
+title: "Unzip local folders"
+author: "B Steele"
+date: "2023-04-28"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+
+zip_dir = 'data/espa_bulkdownload/espa-B.Steele@colostate.edu-03062023-140435-775'
+unzip_dir = 'data/espa_bulkdownload'
+```
+
+# List files
+
+```{r}
+alltars = list.files(zip_dir, pattern = '.tar.gz')
+subtars = alltars[!grepl('prop', alltars)]
+```
+
+## create subdirectory names
+
+```{r}
+grabID = function(dir_name) {
+  unlist(str_split(dir_name, '-'))[1]
+}
+
+dirnames = unlist(map(subtars, grabID))
+```
+
+# Unzip folders upstream
+
+```{r}
+multiUnzip = function(tarFile, destDir) {
+  untar(file.path(zip_dir, tarFile), exdir = file.path(unzip_dir, destDir))
+}
+
+map2(subtars, dirnames, multiUnzip)
+```

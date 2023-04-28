@@ -79,18 +79,13 @@ collated_data$`system:index` = map(collated_data$`system:index`, grabSystemIndex
 
 collated_data$`system:index` = as.character(collated_data$`system:index`)
 
-#drop the pCount columns that are blank (this is just an artefact of the workflow)
-collated_data <- collated_data %>% 
-  select(-c(pCount_Aerosol:pCount_SurfaceTemp)) 
-
 ```
 
 Grab only the metadata we want
 
 ```{r}
 filtered_metadata <- collated_metadata %>% 
-  # mutate(IMAGE_QUALITY = if_else(is.na(IMAGE_QUALITY), IMAGE_QUALITY_OLI, IMAGE_QUALITY)) %>% 
-  rename(IMAGE_QUALITY = IMAGE_QUALITY_OLI) %>% 
+  mutate(IMAGE_QUALITY = if_else(is.na(IMAGE_QUALITY), IMAGE_QUALITY_OLI, IMAGE_QUALITY)) %>% 
   select(`system:index`, 
          LANDSAT_PRODUCT_ID,
          WRS_PATH, 
@@ -104,7 +99,6 @@ filtered_metadata <- collated_metadata %>%
          SUN_AZIMUTH, 
          SUN_ELEVATION) 
 filtered_L1 <- L1_list %>% 
-  # mutate(IMAGE_QUALITY = if_else(is.na(IMAGE_QUALITY), IMAGE_QUALITY_OLI, IMAGE_QUALITY)) %>% 
   rename(IMAGE_QUALITY = IMAGE_QUALITY_OLI) %>% 
   select(`system:index`, 
          LANDSAT_PRODUCT_ID,
@@ -140,6 +134,8 @@ Filter:
 -   each scene-loaction must have at least 10 pixels in pCount_dswe1 (confident water) contributing to values
 
 -   each scene must have an image quality of 7 or greater
+
+-   data mush be in feasible range (-0.01 to 0.20)
 
 There are likely other filters you will want to apply, but these are the minimal filters.
 
