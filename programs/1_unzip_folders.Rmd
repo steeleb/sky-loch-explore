@@ -12,14 +12,18 @@ zip_dir = 'data/espa_bulkdownload/espa-B.Steele@colostate.edu-03062023-140435-77
 unzip_dir = 'data/espa_bulkdownload'
 ```
 
-# List files
+# Purpose
+
+This script unzips the tar.gz files downloaded using the [command line instructions found here.](https://github.com/rossyndicate/ROSS_RS_mini_tools/blob/main/espa_download/ESPA_bulkDownload_howto.Rmd)
+
+## List files
 
 ```{r}
 alltars = list.files(zip_dir, pattern = '.tar.gz')
 subtars = alltars[!grepl('prop', alltars)]
 ```
 
-## create subdirectory names
+## Create subdirectory names
 
 ```{r}
 grabID = function(dir_name) {
@@ -29,7 +33,7 @@ grabID = function(dir_name) {
 dirnames = unlist(map(subtars, grabID))
 ```
 
-# Unzip folders upstream
+## Unzip folders upstream
 
 ```{r}
 multiUnzip = function(tarFile, destDir) {
