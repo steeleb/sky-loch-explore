@@ -1,5 +1,5 @@
 ---
-title: "Sky/Loch Metadata for Aquatic Surface Ref Request"
+title: "Sky/Loch SR/ST collation and metadata for Aquatic Surface Ref Request"
 author: "B Steele"
 date: "2023-03-03"
 output: html_document
@@ -7,7 +7,7 @@ output: html_document
 
 # Purpose
 
-To get a scene list for Sky/Loch for the Provisional Aquatic SR product.
+To process the C2 SR/ST pull and get a scene list for Sky/Loch for the Provisional Aquatic SR product.
 
 # Setup
 
@@ -131,18 +131,16 @@ write.csv(data, file.path(data_dir, paste0('SkyLoch_LandsatC2_SRST_collated_v', 
 
 Filter:
 
--   each scene-loaction must have at least 10 pixels in pCount_dswe1 (confident water) contributing to values
+-   each scene-location must have at least 8 pixels in pCount_dswe1 (confident water) contributing to values
 
 -   each scene must have an image quality of 7 or greater
 
 -   data mush be in feasible range (-0.01 to 0.20)
 
-There are likely other filters you will want to apply, but these are the minimal filters.
 
 ```{r}
 filtered = data %>% 
-  filter(pCount_dswe1 > 10 &
-           IMAGE_QUALITY >= 7)
+  filter(!is.na(med_Blue), pCount_dswe1 >= 6, IMAGE_QUALITY >= 7)
 ```
 
 Read in location info
