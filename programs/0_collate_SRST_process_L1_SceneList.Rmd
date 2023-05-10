@@ -18,8 +18,8 @@ library(lubridate)
 library(ggthemes)
 library(gghighlight)
 
-data_dir = file.path('data/')
-
+data_dir = file.path('data/remoteSensing/')
+drive_dir = file.path('data/fromDrive')
 drive_auth()
 1
 ```
@@ -34,16 +34,16 @@ files = drive_ls(path = 'sky_loch')
 
 #function for downloading to data folder
 dr_down = function(filename, fileid){
-  drive_download(file = as_id(fileid), path = file.path(data_dir, 'fromDrive', filename), overwrite = T)
+  drive_download(file = as_id(fileid), path = file.path(drive_dir, filename), overwrite = T)
 }
 
 #map over the function to download all files
 map2(files$name, files$id, dr_down)
 
 # create a list of the files in the tmp directory
-list = list.files(file.path(data_dir, 'fromDrive'))
+list = list.files(drive_dir)
 #add prefix
-list = file.path(data_dir, 'fromDrive', list)
+list = file.path(drive_dir, list)
 
 meta_list = list[grepl('meta', list) & !grepl('LEVEL1', list)]
 data_list = list[!grepl('meta', list)]
@@ -140,13 +140,14 @@ Filter:
 
 ```{r}
 filtered = data %>% 
-  filter(!is.na(med_Blue), pCount_dswe1 >= 6, IMAGE_QUALITY >= 7)
+  filter(!is.na(med_Blue), pCount_dswe1 >= 6, IMAGE_QUALITY >= 7) %>% 
+  filter_at(vars(med_Red, med_Green, med_Blue, med_Nir, med_Swir1, med_Swir2), all_vars(.<0.2 & . > -0.01))
 ```
 
 Read in location info
 
 ```{r}
-locs = read.csv(file.path(data_dir, 'location_lat_longs_sky_loch.csv')) %>% 
+locs = read.csv(file.path('data', 'location_lat_longs_sky_loch.csv')) %>% 
   rowid_to_column() %>% 
   select(rowid, location)
 ```
