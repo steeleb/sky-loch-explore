@@ -36,6 +36,7 @@ point_rs_sub = point_rs %>%
   select(date, rowid,
          mission,
          med_Blue:med_Swir2,
+         min_SurfaceTemp, med_SurfaceTemp, max_SurfaceTemp,
          prop_clouds:system.index,
          CLOUD_COVER:SUN_ELEVATION) %>% 
   filter(mission != 'LANDSAT_4')
@@ -121,6 +122,7 @@ filtered_corrected %>%
   select(date, rowid, location,
          mission,
          med_Blue_corr:med_Swir2_corr,
+         min_SurfaceTemp:max_SurfaceTemp,
          prop_clouds:SUN_ELEVATION) %>%
   write.csv(., file.path(rs_dir, paste0('SkyLoch_LandsatC2_SRST_filtered_gt0_corr_', Sys.Date(), '.csv')), row.names = F)
 
