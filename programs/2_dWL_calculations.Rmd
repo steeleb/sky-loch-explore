@@ -22,62 +22,9 @@ This script calculates dominant wavelength (dWL) for Loch and Sky Ponds.
 
 ```{r}
 files <- list.files(ls_dir)
-filtered <- files[grepl('filtered', files)]
+filtered <- files[grepl('filtered_gt0', files)]
 
 ls <- read.csv(file.path(ls_dir, filtered))
-```
-
-# Adjust Rrs values so no data are negative
-
-```{r}
-#get all unique dates
-datelist <- unique(ls$date)
-
-#look at range for all bands
-range(ls$med_Blue)
-range(ls$med_Green)
-range(ls$med_Red)
-range(ls$med_Nir)
-range(ls$med_Swir1)
-range(ls$med_Swir2)
-
-```
-
-## Make helper function to grab lowest value in any band
-
-```{r}
-getBandMinimum = function(oneDate) {
-  mins = oneDate %>% 
-    group_by(mission) %>% 
-    dplyr::summarize(min = min(med_Blue, med_Green, med_Red, med_Nir, med_Swir1, med_Swir2))
-  mins
-}
-```
-
-## And then a function to adjust the band values to be positive
-
-Because all values are well under .2, we're just going to add the minimum value to all bands, assuming the atmospheric correction bias effects all bands equally.
-
-```{r}
-adjustBands = function(dt) {
-  df = ls %>% filter(date == dt)
-  mins = getBandMinimum(df)
-  df = df %>% 
-    full_join(., mins) %>% 
-    mutate(Red_adj = if_else(min < 0, med_Red + (-min), med_Red),
-           Green_adj = if_else(min < 0, med_Green + (-min), med_Green),
-           Blue_adj = if_else(min < 0, med_Blue + (-min), med_Blue),
-           Nir_adj = if_else(min < 0, med_Nir + (-min), med_Nir),
-           Swir1_adj = if_else(min < 0, med_Swir1 + (-min), med_Swir1),
-           Swir2_adj = if_else(min < 0, med_Swir2 + (-min), med_Swir2))
-  df           
-}
-```
-
-## Apply adjustment across all dates
-
-```{r}
-ls_adj = map_dfr(datelist, adjustBands)
 ```
 
 # Calculate dWL from adjusted values
