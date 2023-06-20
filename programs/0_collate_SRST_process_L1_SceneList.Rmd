@@ -128,46 +128,6 @@ rm(collated_data, collated_metadata)
 write.csv(data, file.path(data_dir, paste0('SkyLoch_LandsatC2_SRST_collated_v', Sys.Date(), '.csv')))
 ```
 
-## Filter scene summaries
-
-Filter:
-
--   each scene-location must have at least 6 pixels in pCount_dswe1 (confident water) contributing to values
-
--   each scene must have an image quality of 7 or greater
-
--   data mush be in feasible range (0 to 0.20)
-
-
-```{r}
-filtered = data %>% 
-  filter(!is.na(med_Blue), pCount_dswe1 >= 6, IMAGE_QUALITY >= 7) %>% 
-  filter_at(vars(med_Red, med_Green, med_Blue, med_Nir, med_Swir1, med_Swir2), all_vars(.<0.2 & . > 0.0))
-```
-
-Read in location info
-
-```{r}
-locs = read.csv(file.path('data', 'location_lat_longs_sky_loch.csv')) %>% 
-  rowid_to_column() %>% 
-  select(rowid, location)
-```
-
-Join filtered data with location info
-
-```{r}
-filtered <- filtered %>% 
-  mutate(rowid = as.integer(rowid),
-         sat = as.character(mission)) %>% 
-  full_join(., locs)
-```
-
-## Export to OneDrive folder
-
-```{r}
-write.csv(filtered, file.path(data_dir, paste0('SkyLoch_LandsatC2_SRST_filtered_gt0_v', Sys.Date(), '.csv')), row.names = F)
-```
-
 ## Get unique system IDs for Provisional Aquatic SR product
 
 ```{r}
