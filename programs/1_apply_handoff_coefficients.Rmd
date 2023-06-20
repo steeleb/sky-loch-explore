@@ -19,13 +19,13 @@ This script applies the regional hand-off coefficients to the Sky/Loch LS stack.
 
 ## Load files
 
-And apply some baseline filters for acceptable ranges.
+The handoff coefficients here were calculated using all lakes greater than or equal to 1 ha in EcoRegion 3, Zone 21 following the methods described in Topp, et al. (2020).
 
 ```{r}
 handoff = read.csv(file.path(rs_dir, 'ER3_Z21_regional_handoff_coefficients_v2023-05-24.csv')) %>% 
   rename(mission = SatCorr)
 
-point_rs = read.csv(file.path(rs_dir, 'SkyLoch_LandsatC2_SRST_filtered_gt0_v2023-06-20.csv')) 
+point_rs = read.csv(file.path(rs_dir, 'SkyLoch_LandsatC2_SRST_collated_v2023-06-20.csv')) 
 
 ```
 
@@ -33,7 +33,7 @@ Because we're really only applying corrections to the median band values, let's 
 
 ```{r}
 point_rs_sub = point_rs %>% 
-  select(date, rowid, location,
+  select(date, rowid,
          mission,
          med_Blue:med_Swir2,
          prop_clouds:system.index,
@@ -80,10 +80,44 @@ point_rs_sub = point_rs_sub %>%
          med_Swir2_corr = ifelse(mission == 'LANDSAT_7', med_Swir2, med_Swir2_corr))
 ```
 
+## Filter scene summaries
+
+Filter:
+
+-   each scene-location must have at least 6 pixels in pCount_dswe1 (confident water) contributing to values
+
+-   each scene must have an image quality of 7 or greater
+
+-   data mush be in feasible range (0 to 0.20)
+
+
+```{r}
+filtered_corrected = point_rs_sub %>% 
+  filter(!is.na(med_Blue_corr), pCount_dswe1 >= 6, IMAGE_QUALITY >= 7) %>% 
+  filter_at(vars(med_Red_corr, med_Green_corr, med_Blue_corr, med_Nir_corr, med_Swir1_corr, med_Swir2_corr), all_vars(.<0.2 & . > 0.0))
+```
+
+Read in location info
+
+```{r}
+locs = read.csv(file.path('data', 'location_lat_longs_sky_loch.csv')) %>% 
+  rowid_to_column() %>% 
+  select(rowid, location)
+```
+
+Join filtered data with location info
+
+```{r}
+filtered_corrected <- filtered_corrected %>% 
+  mutate(rowid = as.integer(rowid),
+         sat = as.character(mission)) %>% 
+  full_join(., locs)
+```
+
 ## Export file
 
 ```{r}
-point_rs_sub %>%
+filtered_corrected %>%
   select(date, rowid, location,
          mission,
          med_Blue_corr:med_Swir2_corr,
