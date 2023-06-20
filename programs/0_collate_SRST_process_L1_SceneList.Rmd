@@ -50,7 +50,8 @@ data_list = list[!grepl('meta', list)]
 L1_list = list[grepl('LEVEL1', list)]
 
 #read them in and map to a dataframe
-collated_data = map_dfr(data_list, read_csv)
+collated_data = map_dfr(data_list, read_csv) %>% 
+  filter(!is.na(med_Blue))
 collated_metadata = map_dfr(meta_list, read_csv)
 L1_list = map_dfr(L1_list, read_csv)
 
@@ -131,17 +132,17 @@ write.csv(data, file.path(data_dir, paste0('SkyLoch_LandsatC2_SRST_collated_v', 
 
 Filter:
 
--   each scene-location must have at least 8 pixels in pCount_dswe1 (confident water) contributing to values
+-   each scene-location must have at least 6 pixels in pCount_dswe1 (confident water) contributing to values
 
 -   each scene must have an image quality of 7 or greater
 
--   data mush be in feasible range (-0.01 to 0.20)
+-   data mush be in feasible range (0 to 0.20)
 
 
 ```{r}
 filtered = data %>% 
   filter(!is.na(med_Blue), pCount_dswe1 >= 6, IMAGE_QUALITY >= 7) %>% 
-  filter_at(vars(med_Red, med_Green, med_Blue, med_Nir, med_Swir1, med_Swir2), all_vars(.<0.2 & . > -0.01))
+  filter_at(vars(med_Red, med_Green, med_Blue, med_Nir, med_Swir1, med_Swir2), all_vars(.<0.2 & . > 0.0))
 ```
 
 Read in location info
@@ -164,7 +165,7 @@ filtered <- filtered %>%
 ## Export to OneDrive folder
 
 ```{r}
-write.csv(filtered, file.path(data_dir, paste0('SkyLoch_LandsatC2_SRST_filtered_v', Sys.Date(), '.csv')), row.names = F)
+write.csv(filtered, file.path(data_dir, paste0('SkyLoch_LandsatC2_SRST_filtered_gt0_v', Sys.Date(), '.csv')), row.names = F)
 ```
 
 ## Get unique system IDs for Provisional Aquatic SR product
