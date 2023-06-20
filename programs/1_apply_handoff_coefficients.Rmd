@@ -1,0 +1,93 @@
+---
+title: "Application of Handoff Coefficients"
+author: "B Steele"
+date: "2023-06-20"
+output: html_document
+---
+
+
+```{r}
+library(tidyverse)
+
+#point to directories
+rs_dir = 'data/remoteSensing/'
+```
+
+# Purpose
+
+This script applies the regional hand-off coefficients to the Sky/Loch LS stack.
+
+## Load files
+
+And apply some baseline filters for acceptable ranges.
+
+```{r}
+handoff = read.csv(file.path(rs_dir, 'ER3_Z21_regional_handoff_coefficients_v2023-05-24.csv')) %>% 
+  rename(mission = SatCorr)
+
+point_rs = read.csv(file.path(rs_dir, 'SkyLoch_LandsatC2_SRST_filtered_gt0_v2023-06-20.csv')) 
+
+```
+
+Because we're really only applying corrections to the median band values, let's drop all the others and pull the date/loc/mission to the front and drop Landsat 4.
+
+```{r}
+point_rs_sub = point_rs %>% 
+  select(date, rowid, location,
+         mission,
+         med_Blue:med_Swir2,
+         prop_clouds:system.index,
+         CLOUD_COVER:SUN_ELEVATION) %>% 
+  filter(mission != 'LANDSAT_4')
+```
+
+## Apply coefficients
+
+We'll use the regional coefficients to calculate Rrs values for LS 5, 8, 9 as relative values to LS 7.
+
+Let's re-orient the handoff calcs so that we can just join with the upstream dataset and apply in a single step.
+
+```{r}
+handoff_h = handoff %>% 
+  pivot_longer(names_to = 'coeff',
+               values_to = 'value',
+               cols = c('intercept', 'B1', 'B2')) %>% 
+  pivot_wider(names_from = c('band', 'coeff'),
+              values_from = 'value')
+```
+
+Now join with the rs subset
+
+```{r}
+point_rs_sub = full_join(point_rs_sub, handoff_h)
+```
+
+And apply the coefficients, and fill in LS 7 as corrected (all values are corrected *to* LS 7 values)
+
+```{r}
+point_rs_sub = point_rs_sub %>%
+  mutate(med_Blue_corr = med_Blue_intercept + med_Blue_B1*med_Blue + med_Blue_B2*med_Blue^2,
+         med_Red_corr = med_Red_intercept + med_Red_B1*med_Red + med_Red_B2*med_Red^2,
+         med_Green_corr = med_Green_intercept + med_Green_B1*med_Green + med_Green_B2*med_Green^2,
+         med_Nir_corr = med_Nir_intercept + med_Nir_B1*med_Nir + med_Nir_B2*med_Nir^2,
+         med_Swir1_corr = med_Swir1_intercept + med_Swir1_B1*med_Swir1 + med_Swir1_B2*med_Swir1^2,
+         med_Swir2_corr = med_Swir2_intercept + med_Swir2_B1*med_Swir2 + med_Swir2_B2*med_Swir2^2) %>%
+  mutate(med_Blue_corr = ifelse(mission == 'LANDSAT_7', med_Blue, med_Blue_corr),
+         med_Red_corr = ifelse(mission == 'LANDSAT_7', med_Red, med_Red_corr),
+         med_Green_corr = ifelse(mission == 'LANDSAT_7', med_Green, med_Green_corr),
+         med_Nir_corr = ifelse(mission == 'LANDSAT_7', med_Nir, med_Nir_corr),
+         med_Swir1_corr = ifelse(mission == 'LANDSAT_7', med_Swir1, med_Swir1_corr),
+         med_Swir2_corr = ifelse(mission == 'LANDSAT_7', med_Swir2, med_Swir2_corr))
+```
+
+## Export file
+
+```{r}
+point_rs_sub %>%
+  select(date, rowid, location,
+         mission,
+         med_Blue_corr:med_Swir2_corr,
+         prop_clouds:SUN_ELEVATION) %>%
+  write.csv(., file.path(rs_dir, paste0('SkyLoch_LandsatC2_SRST_filtered_gt0_corr_', Sys.Date(), '.csv')), row.names = F)
+
+```
