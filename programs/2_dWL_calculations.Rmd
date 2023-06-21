@@ -114,9 +114,10 @@ Here, we drop any scenes where the minimum Landsat-derived surface tempearture i
 ```{r, echo = F}
 # make sure we only have ice-free data
 ls_gt0 = ls %>% 
-  mutate(date = as.Date(date),
-         month = as.numeric(format(date, '%m'))) %>% 
-  filter(min_SurfaceTemp > 283.15) 
+  mutate(date = ymd(date),
+         month = as.numeric(format(date, '%m')),
+         day = as.numeric(format(date, '%d')))  %>% 
+  filter((month == 7 & day >=15) | (month >= 8 & month <= 10)) 
 
 ggplot(ls_gt0, aes(x = date, y = dWL, color = location)) +
   geom_point() +
@@ -132,25 +133,35 @@ There is certainly an increase in variability in dWL at The Loch. Sky Pond does 
 Using Sen's method for computing slope on a timeseries, see if there is a statistically significant trend in the data. Because the Sky Pond data are pretty sparse, we'll have to do this with Loch only. First, we need a complete timeseries with a static time step. The smallest complete, static, time step is one year, so we'll summarize dWL for that timestep.
 
 ```{r}
-Loch_annual = ls_gt0 %>% 
-  filter(location == 'TheLoch') %>% 
+ls_annual = ls_gt0 %>% 
   mutate(year = as.numeric(format(date, '%Y'))) %>% 
-  group_by(year) %>% 
-  dplyr::summarize(med_dWL = median(dWL))
+  group_by(location, year) %>% 
+  dplyr::summarize(med_dWL = median(dWL),
+                   n = n())
 
-ggplot(Loch_annual, aes(x = year, y = med_dWL)) +
+ggplot(ls_annual, aes(x = year, y = med_dWL, color = location)) +
   geom_point() +
   labs(x = NULL,
        y = 'median annual dWL') +
-  theme_bw()
+  theme_bw() +
+  theme(legend.position = 'bottom') +
+  scale_color_colorblind()
 ```
 
 There are some gaps in the complete record, so we'll only use data form 1992 forward (where there are no gaps in the timeseries) and test for trends.
 
 ```{r, echo = F}
+Loch_annual <- ls_annual %>% 
+  filter(location == 'TheLoch')
 Loch_annual_sub = Loch_annual %>% filter(year >= 1992)
 
 Loch_annual_ts = ts(Loch_annual_sub$med_dWL, start = 1992, end = 2022)
+
+ggplot(Loch_annual_sub, aes(x = year, y = med_dWL)) +
+  geom_point() +
+  labs(x = NULL,
+       y = 'median summer dWL') +
+  theme_bw()
 ```
 
 ### Check for autocorrelation.
@@ -159,7 +170,7 @@ Loch_annual_ts = ts(Loch_annual_sub$med_dWL, start = 1992, end = 2022)
 acf(Loch_annual_ts)
 ```
 
-There is no strong evidence of autocorrelation in this dataset. Looks like 5-year lag has some autocorrelation, but it is barely beyond the boundary of 'random chance'.
+There is no strong evidence of autocorrelation in this dataset. Looks like 4-year lag has some autocorrelation, but it is barely beyond the boundary of 'random chance'.
 
 ### Check for trend
 
